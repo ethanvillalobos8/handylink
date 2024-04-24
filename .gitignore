@@ -29,3 +29,7 @@ package-lock.json
 
 # Miscellaneous
 .DS_Store
+
+# Secure folder & PEM file
+secure/
+*.pem
