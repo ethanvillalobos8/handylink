@@ -36,6 +36,8 @@ const Navbar = () => {
                 <ul className="flex space-x-4">
                     <Link href='/' className="hover:text-custom-primary p-2 rounded">Home</Link>
                     <Link href='/about' className="hover:text-custom-primary p-2 rounded">About</Link>
+                    <Link href='/contact' className="hover:text-custom-primary p-2 rounded">Contact</Link>
+                    <Link href='/account' className="hover:text-custom-primary p-2 rounded">Account</Link> {/* added to navbar to see accounts page */}
                     {user ? (
                         <button onClick={logout} className="hover:text-custom-primary p-2 rounded">Logout</button>
                     ) : (
