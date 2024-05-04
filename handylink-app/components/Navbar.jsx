@@ -12,6 +12,7 @@ const Navbar = () => {
                     <Link href='/' className="hover:text-custom-primary p-2 rounded">Home</Link>
                     <Link href='/about' className="hover:text-custom-primary p-2 rounded">About</Link>
                     <Link href='/contact' className="hover:text-custom-primary p-2 rounded">Contact</Link>
+                    <Link href='/account' className="hover:text-custom-primary p-2 rounded">Account</Link> {/* added to navbar to see accounts page */}
                     <Link href='/login' className="hover:text-custom-primary bg-indigo-600 p-2 rounded">Login</Link>
                 </ul>
             </div>
