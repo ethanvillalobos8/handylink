@@ -1,102 +1,169 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase-config';
+import { collection, query, where, doc, getDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import AddService from './AddService';
+import ProviderRequestCard from './ProviderRequest';
+import ProviderServiceCard from './ProviderService';
+import { MdKeyboardArrowDown } from "react-icons/md";
 
-function ProviderDashboard() {
-    // Dummy data for services and appointments
-    const [services, setServices] = useState([
-        { id: 1, name: "Plumbing", description: "Fixing leaks and installing pipes.", rate: "$40/hour" },
-        { id: 2, name: "Electrical", description: "Installing electrical systems and troubleshooting.", rate: "$50/hour" },
-        { id: 3, name: "House Cleaning", description: "General cleaning services.", rate: "$30/hour" }
-    ]);
-    const [appointments, setAppointments] = useState([
-        { id: 1, service: "Plumbing", client: "John Doe", date: "2023-09-15", status: "Pending" },
-        { id: 2, service: "Electrical", client: "Jane Smith", date: "2023-09-17", status: "Approved" }
-    ]);
-
+export default function ProviderDashboard(props) {
+    const [requests, setRequests] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [filter, setFilter] = useState('pending');
+    const [selectedOption, setSelectedOption] = useState('Show Pending');
+    const [viewMode, setViewMode] = useState('requests');
+    const [services, setServices] = useState([]);
+    const [serviceIds, setServiceIds] = useState([]);
 
-    const handleAddService = () => {
-        if (isModalVisible) {
-            handleCloseModal();
-        } else {
-            setIsModalVisible(true);
-        }
+    const switchView = (mode) => {
+        console.log("Switching view to:", mode);  // Debugging output
+        setViewMode(mode);
     };    
 
-    const handleCloseModal = () => {
-        setIsModalVisible(false);
+    const handleAddService = () => {
+        setIsModalVisible(!isModalVisible);
     };
 
-    // Delete a service
-    const handleDeleteService = (id) => {
-        setServices(services.filter(service => service.id !== id));
+    const handleDropdownChange = (event) => {
+        setSelectedOption(event.target.options[event.target.selectedIndex].text);
+        setFilter(event.target.value);
     };
 
-    // Approve an appointment
-    const handleApproveAppointment = (id) => {
-        const updatedAppointments = appointments.map(appointment => 
-            appointment.id === id ? { ...appointment, status: 'Approved' } : appointment
-        );
-        setAppointments(updatedAppointments);
+    const handleAcceptRequest = async (requestId) => {
+        const requestRef = doc(db, 'Requests', requestId);
+        await updateDoc(requestRef, {
+            Status: 'Accepted'
+        });
+        console.log('Request accepted:', requestId);
+        // Optionally, refresh requests or update UI
+    };
+    
+    const handleRejectRequest = async (requestId) => {
+        if (window.confirm('Confirm you would like to reject this request')) {
+            const requestRef = doc(db, 'Requests', requestId);
+            await deleteDoc(requestRef);
+            console.log('Request rejected and deleted:', requestId);
+            // Optionally, remove the request from the list without a full refresh
+            setRequests(prev => prev.filter(request => request.id !== requestId));
+        }
     };
 
-    // Decline an appointment
-    const handleDeclineAppointment = (id) => {
-        const updatedAppointments = appointments.map(appointment => 
-            appointment.id === id ? { ...appointment, status: 'Declined' } : appointment
-        );
-        setAppointments(updatedAppointments);
-    };
+    useEffect(() => {
+        const getServiceIdFromRequests = () => {
+            const ids = [];
+            requests.forEach(request => {
+                if (!ids.includes(request.ServiceID)) {
+                    ids.push(request.ServiceID);
+                }
+            });
+            setServiceIds(ids);
+        };
+
+        getServiceIdFromRequests();
+    }, [requests]);
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            console.log("Fetching services for provider:", props.user.uid);  // Debugging output
+            const servicesRef = collection(db, 'Services');
+            const q = query(servicesRef, where("provider_id", "==", props.user.uid));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const fetchedServices = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setServices(fetchedServices);
+                console.log("Services fetched:", fetchedServices);  // Debugging output
+            } else {
+                console.log("No services found");  // Debugging output
+                setServices([]);
+            }
+        };
+    
+        if (viewMode === 'services') {
+            fetchServices();
+        }
+    }, [viewMode, db, props.user.uid]);  
+
+    useEffect(() => {
+        const fetchRequests = async () => {
+            const providerDoc = doc(db, 'Provider', props.user.uid);
+            const providerSnap = await getDoc(providerDoc);
+            if (!providerSnap.exists()) {
+                console.log('No such provider!');
+                return;
+            }
+            const receivedRequestsIds = providerSnap.data().requests_received || [];
+            if (receivedRequestsIds.length > 0) {
+                const requestsPromises = receivedRequestsIds.map(requestId => 
+                    getDoc(doc(db, 'Requests', requestId))
+                );
+                const requestsDocs = await Promise.all(requestsPromises);
+                const requests = requestsDocs
+                    .filter(docSnap => docSnap.exists())
+                    .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+                setRequests(requests);
+            } else {
+                setRequests([]);
+            }
+        };
+        fetchRequests();
+    }, []);
 
     return (
-        <div className="min-h-screen bg-custom-background py-8">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 className="text-3xl font-semibold text-gray-900 mb-8">Provider Dashboard</h1>
-
-                <div className="mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Services</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {services.map(service => (
-                            <div key={service.id} className="bg-white p-4 rounded shadow">
-                                <h3 className="text-lg font-bold">{service.name}</h3>
-                                <p>{service.description}</p>
-                                <p className="text-sm font-semibold">{service.rate}</p>
-                                <button onClick={() => handleDeleteService(service.id)} className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <button onClick={handleAddService} className="mt-4 bg-custom-accent hover:bg-blue-400 text-white px-4 py-2 rounded">
-                        {isModalVisible ? 'Close Modal' : 'Add New Service'}
+        <div className="flex flex-col w-full h-full bg-white rounded-sm">
+            <div className="flex justify-between items-center bg-slate-100 p-2 rounded-sm">
+                {/* Buttons to switch views */}
+                <div className="flex space-x-4 px-4">
+                    <button onClick={() => switchView('requests')} className={`text-sm ${viewMode === 'requests' ? 'font-bold text-blue-700' : 'text-gray-500'}`}>
+                        View Requests
                     </button>
-                    {isModalVisible && <AddService />}
+                    <button onClick={() => switchView('services')} className={`text-sm ${viewMode === 'services' ? 'font-bold text-blue-700' : 'text-gray-500'}`}>
+                        View Services
+                    </button>
                 </div>
-
-                <div className="mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Scheduled Appointments</h2>
-                    <div className="space-y-4">
-                        {appointments.map(appointment => (
-                            <div key={appointment.id} className="bg-white p-4 rounded shadow">
-                                <h3 className="text-lg font-bold">{appointment.service}</h3>
-                                <p>Client: {appointment.client}</p>
-                                <p>Date: {appointment.date}</p>
-                                <p>Status: {appointment.status}</p>
-                                <div className="flex space-x-2">
-                                    <button onClick={() => handleApproveAppointment(appointment.id)} className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-                                        Approve
-                                    </button>
-                                    <button onClick={() => handleDeclineAppointment(appointment.id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-                                        Decline
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                {viewMode === 'requests' && (
+                    <div className="relative" style={{ width: `${selectedOption.length + 2}ch` }}>
+                        <select 
+                            value={filter} 
+                            onChange={handleDropdownChange}
+                            className="appearance-none block w-full bg-transparent border-none text-sm text-custom-text py-1 pl-3 pr-8 rounded leading-tight focus:outline-none"
+                        >
+                            <option value="all">Show All</option>
+                            <option value="pending">Show Pending</option>
+                            <option value="accepted">Show Accepted</option>
+                            <option value="completed">Show Completed</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-custom-text">
+                            <MdKeyboardArrowDown />
+                        </div>
                     </div>
-                </div>
+                )}
+                <button onClick={handleAddService} className="text-blue-500 hover:text-blue-700 px-4 py-2 rounded text-sm">
+                    {isModalVisible ? 'Close Modal' : 'Add New Service'}
+                </button>
+            </div>
+            <div className="flex-grow space-y-4">
+                {isModalVisible ? (
+                    <AddService />
+                ) : viewMode === 'requests' ? (
+                    console.log(requests),
+                    requests.filter(request => filter === 'all' || request.Status.toLowerCase() === filter).map(request => (
+                        <ProviderRequestCard
+                            key={request.id}
+                            request={request}
+                            onAccept={() => handleAcceptRequest(request.id)}
+                            onReject={() => handleRejectRequest(request.id)}
+                        />
+                    ))
+                ) : (
+                    services.map(service => {
+                        // If service is not in any active requests, it can be modified
+                        const modifiable = !serviceIds.includes(service.id);
+                        return <ProviderServiceCard key={service.id} service={service} modifiable={modifiable} />;
+                    })
+                )}
             </div>
         </div>
-    );
+    );    
 }
-
-export default ProviderDashboard;
