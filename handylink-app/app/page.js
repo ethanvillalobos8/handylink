@@ -12,6 +12,7 @@ import ProviderDashboard from '@/components/ProviderDashboard';
 function HomePage() {
   const [user, setUser] = useState(null);
   const [isProvider, setIsProvider] = useState(false);
+  const [loading, setLoading] = useState(true); // Added loading state
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
@@ -39,21 +40,23 @@ function HomePage() {
         setUser(null);
         setIsProvider(false);
       }
+      setLoading(false); // Set loading to false after the check
     });
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  // log user data
-  console.log(user);
+  if (loading) {
+    return null; // Or return null or a loading spinner
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-custom-background">
+    <div className="max-h-screen h-screen flex flex-col bg-custom-background">
       <header>
         <Navbar user={user} />
       </header>
-      <main className="flex-grow container mx-auto pt-16 pb-4">
+      <main className="flex-grow container mx-auto pt-12 pb-4">
         {isProvider ? (
           <ProviderDashboard user={user} />
         ) : (

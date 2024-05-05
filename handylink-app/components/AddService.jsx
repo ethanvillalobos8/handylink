@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '/firebase-config';
-import { addDoc, collection, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { setDoc, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { fetchProviderId } from '@/lib/id';
 
@@ -63,7 +63,7 @@ export default function AddService() {
             const providerId = await fetchProviderId();
             const serviceId = uuidv4();
             // Create a new document in the 'Services' collection
-            await addDoc(collection(db, 'Services'), {
+            await setDoc(doc(db, 'Services', serviceId), {
                 name: serviceName,
                 category: category,
                 description: description,
@@ -80,7 +80,6 @@ export default function AddService() {
                     }), {}),
                 status: 'Active',
                 provider_id: providerId,
-                service_id: serviceId
             });
 
             // Add the service to the provider's services_offered array
