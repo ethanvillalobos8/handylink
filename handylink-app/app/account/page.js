@@ -6,6 +6,7 @@ import { ref } from 'firebase/storage';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword  } from "firebase/auth"; //added signInWithEmailAndPassword
 import { useEffect, useState } from "react";
 import React from 'react'; //component formatting
+import Link from "next/link";
 
 
 

@@ -183,7 +183,7 @@ export default function ProviderApply() {
                 </button>
                 {errorMessage && <p className="text-red-500">{errorMessage}</p>}
                 <p className="mt-4 text-custom-text">
-                    Don't have an account yet? <Link className="text-custom-accent" href="/signup">Create one here</Link>
+                    Don&apos;t have an account yet? <Link className="text-custom-accent" href="/signup">Create one here</Link>
                 </p>
             </div>
         </div>
