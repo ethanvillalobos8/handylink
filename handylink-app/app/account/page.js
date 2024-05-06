@@ -1,7 +1,6 @@
 "use client"; 
 import Navbar from "@/components/Navbar";
-import { auth, db, app } from "@/firebase-config"; //import database from firebase
-import { getDatabase, onValue } from "firebase/database";
+import { getDatabase } from "firebase/database";
 import { ref } from 'firebase/storage';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword  } from "firebase/auth"; //added signInWithEmailAndPassword
 import { useEffect, useState } from "react";
