@@ -1,11 +1,11 @@
 'use client'
 
 import React, { useEffect, useState } from 'react';
+import { auth } from '@/firebase-config';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import Link from 'next/link';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
 const Navbar = () => {
-    const auth = getAuth();
     const [user, setUser] = useState(null);
 
     // Logout user
